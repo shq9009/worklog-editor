@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>每日工作日志 · 私密</title>
+<style>
+  :root{
+    --navy:#0f2a4a; --navy2:#163c66; --blue:#2d7dd2; --blue-l:#e8f1fb;
+    --bg:#f4f7fb; --card:#ffffff; --line:#dbe5f0; --text:#1c2b3a; --muted:#6b7c92;
+    --red:#c0392b; --gold:#8a6d1a; --gold-bg:#fff8d6; --ok:#1e8e5a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+  header h1{font-size:17px;font-weight:600;letter-spacing:.5px}
+  header .sub{font-size:11px;opacity:.75;margin-top:2px}
+  .wrap{max-width:680px;margin:0 auto;padding:14px 14px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(15,42,74,.06)}
+  .card h2{font-size:14px;color:var(--navy);margin-bottom:12px;font-weight:600}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px;font-weight:500}
+  input[type=text],input[type=date],input[type=password],textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;background:#fbfdff;color:var(--text);outline:none;transition:border .15s}
+  input:focus,textarea:focus{border-color:var(--blue);background:#fff}
+  textarea{min-height:84px;resize:vertical;line-height:1.6}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .emoji{display:flex;gap:8px;flex-wrap:wrap}
+  .emoji button{font-size:22px;width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fbfdff;cursor:pointer;transition:all .12s}
+  .emoji button.on{border-color:var(--blue);background:var(--blue-l);transform:scale(1.08)}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;padding:8px 0;border-radius:10px;border:1.5px solid var(--line);background:#fbfdff;font-size:13px;color:var(--muted);cursor:pointer}
+  .seg button.on{border-color:var(--blue);background:var(--blue-l);color:var(--navy);font-weight:600}
+  .secret{border:1.5px solid #e6b8b2;background:#fdf6f5;border-radius:12px;padding:12px;margin-top:4px}
+  .secret textarea{background:#fff;border-color:#e6b8b2}
+  .secret .tag{color:var(--red);font-weight:600}
+  .tip{background:var(--gold-bg);border-radius:10px;padding:9px 12px;font-size:12.5px;color:var(--gold);line-height:1.7;margin-bottom:10px}
+  .btn{display:block;width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--navy2));color:#fff;font-size:16px;font-weight:600;cursor:pointer;letter-spacing:1px;box-shadow:0 2px 8px rgba(45,125,210,.35)}
+  .btn:disabled{opacity:.55}
+  .btn.ghost{background:#fff;color:var(--navy);border:1.5px solid var(--line);box-shadow:none;font-weight:500}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:11px 20px;border-radius:24px;font-size:14px;opacity:0;transition:all .3s;z-index:99;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--red)}
+  #setup{max-width:520px}
+  #setup ol{padding-left:20px;font-size:14px;line-height:2;color:var(--text)}
+  #setup a{color:var(--blue);font-weight:600;word-break:break-all}
+  .hist{font-size:13.5px}
+  .hist .item{display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+  .hist .item:last-child{border-bottom:none}
+  .hist .item:hover{color:var(--blue)}
+  .hist .cnt{color:var(--muted);font-size:12px}
+  #viewer pre{white-space:pre-wrap;word-break:break-all;font-size:13px;line-height:1.8;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding:12px;max-height:55vh;overflow:auto;font-family:inherit}
+  .muted{color:var(--muted);font-size:12px}
+  .flex{display:flex;justify-content:space-between;align-items:center}
+  .linkbtn{background:none;border:none;color:var(--blue);font-size:13px;cursor:pointer;padding:4px}
+  .hidden{display:none!important}
+  .status{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px}
+  .status.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>每日工作日志</h1>
+    <div class="sub">私密仓库 · 保存即提交 GitHub</div>
+  </div>
+  <button class="linkbtn" style="color:#9cc3ee" onclick="logout()">换令牌</button>
+</header>
+
+<!-- 令牌设置 -->
+<div class="wrap hidden" id="setup">
+  <div class="card">
+    <h2>🔑 首次使用：配置 GitHub 令牌</h2>
+    <div class="tip">★ 令牌只保存在你本机浏览器的 localStorage，不上传给任何第三方；权限建议只给 worklog 这一个仓库。</div>
+    <ol>
+      <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub 令牌创建页（点我）</a></li>
+      <li>Token name 随意（如 <b>worklog</b>），Expiration 建议 90 天或 1 年</li>
+      <li>Repository access 选 <b>Only select repositories</b> → 只勾 <b>worklog</b></li>
+      <li>Permissions → Repository permissions → <b>Contents: Read and write</b></li>
+      <li>Generate token，复制以 github_pat_ 开头的令牌，粘贴到下面 ↓</li>
+    </ol>
+    <input type="password" id="tokenInput" placeholder="粘贴 github_pat_... 令牌" style="margin-top:8px">
+    <div class="status" id="setupStatus"></div>
+    <button class="btn" style="margin-top:10px" onclick="saveToken()">保存并验证</button>
+  </div>
+</div>
+
+<!-- 主表单 -->
+<div class="wrap hidden" id="main">
+  <div class="card">
+    <h2>📝 今日打卡</h2>
+    <div class="row">
+      <div><label>日期</label><input type="date" id="date"></div>
+      <div><label>客户 / 项目</label><input type="text" id="client" placeholder="如：蔡甸租赁商拜访"></div>
+    </div>
+    <label>此刻心情</label>
+    <div class="emoji" id="mood"></div>
+    <label>精力状态</label>
+    <div class="seg" id="energy">
+      <button data-v="充沛">⚡ 充沛</button>
+      <button data-v="一般" class="on">➖ 一般</button>
+      <button data-v="疲惫">🥵 疲惫</button>
+    </div>
+    <label>今日工作（多条可换行）</label>
+    <textarea id="work" placeholder="1）……&#10;2）……"></textarea>
+    <label>明日计划</label>
+    <textarea id="plan" placeholder="1）……"></textarea>
+    <div class="secret">
+      <label><span class="tag">🔒 真实备注</span><span class="muted">（只给自己和 AI 看，可写真话、情绪、复盘）</span></label>
+      <textarea id="real" placeholder="今天真实的想法……"></textarea>
+    </div>
+    <div class="status" id="saveStatus"></div>
+    <button class="btn" style="margin-top:10px" id="saveBtn" onclick="save()">保存到 GitHub</button>
+  </div>
+
+  <div class="card">
+    <div class="flex">
+      <h2 style="margin:0">🗂 历史记录</h2>
+      <button class="linkbtn" onclick="loadHistory()">刷新</button>
+    </div>
+    <div class="hist" id="hist"><div class="muted" style="padding:10px 0">点击「刷新」加载</div></div>
+  </div>
+
+  <div class="card hidden" id="viewerCard">
+    <div class="flex"><h2 id="viewerTitle">查看</h2><button class="linkbtn" onclick="closeViewer()">收起</button></div>
+    <pre id="viewer"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const REPO='shq9009/worklog';
+const $=id=>document.getElementById(id);
+let TOKEN=localStorage.getItem('worklog_token')||'';
+let mood='';
+['😄','🙂','😐','😩','🥵','🤯'].forEach(m=>{
+  const b=document.createElement('button');b.textContent=m;
+  b.onclick=()=>{mood=m;document.querySelectorAll('#mood button').forEach(x=>x.classList.remove('on'));b.classList.add('on')};
+  $('mood').appendChild(b);
+});
+document.querySelectorAll('#energy button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#energy button').forEach(x=>x.classList.remove('on'));b.classList.add('on')});
+function today(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function nowTime(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='toast show'+(err?' err':'');setTimeout(()=>t.className='toast',2600)}
+function logout(){localStorage.removeItem('worklog_token');TOKEN='';route()}
+function route(){if(TOKEN){$('setup').classList.add('hidden');$('main').classList.remove('hidden')}else{$('main').classList.add('hidden');$('setup').classList.remove('hidden')}}
+function h(msg,ok){const s=$('saveStatus');s.textContent=msg;s.className='status'+(ok?' ok':'')}
+
+async function gh(path,opts={}){
+  const r=await fetch('https://api.github.com'+path,{...opts,headers:{'Authorization':'Bearer '+TOKEN,'Accept':'application/vnd.github+json',...(opts.headers||{})}});
+  if(r.status===401)throw new Error('令牌无效或过期（401）');
+  if(r.status===403)throw new Error('权限不足（403），检查 Contents 是否给了 Read and write');
+  return r;
+}
+function b64enc(str){const bytes=new TextEncoder().encode(str);let bin='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk){bin+=String.fromCharCode(...bytes.subarray(i,i+chunk))}return btoa(bin)}
+function b64dec(b){const bin=atob(b.replace(/\n/g,''));const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes)}
+
+async function saveToken(){
+  const t=$('tokenInput').value.trim();
+  if(!t){toast('请先粘贴令牌',1);return}
+  $('setupStatus').textContent='验证中…';$('setupStatus').className='status';
+  try{
+    const r=await gh(`/repos/${REPO}`);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    TOKEN=t;localStorage.setItem('worklog_token',t);
+    $('setupStatus').textContent='';route();toast('✅ 验证通过，已保存');
+  }catch(e){$('setupStatus').textContent='❌ '+e.message}
+}
+
+async function save(){
+  const date=$('date').value||today(),work=$('work').value.trim(),plan=$('plan').value.trim(),real=$('real').value.trim(),client=$('client').value.trim();
+  if(!work&&!plan&&!real){toast('内容都是空的，写点什么再保存吧',1);return}
+  const energy=document.querySelector('#energy button.on').dataset.v;
+  const btn=$('saveBtn');btn.disabled=true;h('提交中…');
+  try{
+    const path=`/repos/${REPO}/contents/logs/${date}.md`;
+    const r=await gh(path);let sha,content='';
+    if(r.ok){const j=await r.json();sha=j.sha;content=b64dec(j.content)}
+    let entry=`\n## ${nowTime()} 打卡\n- 心情：${mood||'—'} ｜ 精力：${energy}\n`+(client?`- 客户/项目：${client}\n`:'');
+    if(work)entry+=`\n### 今日工作\n${work}\n`;
+    if(plan)entry+=`\n### 明日计划\n${plan}\n`;
+    if(real)entry+=`\n### 🔒 真实备注（私密）\n${real}\n`;
+    if(!content)entry='# 工作日志 '+date+'\n'+entry;
+    const body={message:`日志 ${date} ${nowTime()}`,content:b64enc(content+entry)};
+    if(sha)body.sha=sha;
+    const p=await gh(path,{method:'PUT',body:JSON.stringify(body)});
+    if(!p.ok)throw new Error('HTTP '+p.status);
+    const cnt=(content.match(/## \d\d:\d\d/g)||[]).length+1;
+    h(`✅ 已保存（今日第 ${cnt} 条，${nowTime()}）`,true);
+    toast('✅ 已提交 GitHub');
+    $('work').value='';$('plan').value='';$('real').value='';
+    loadHistory();
+  }catch(e){h('');toast('❌ '+e.message,1)}
+  btn.disabled=false;
+}
+
+async function loadHistory(){
+  $('hist').innerHTML='<div class="muted" style="padding:10px 0">加载中…</div>';
+  try{
+    const r=await gh(`/repos/${REPO}/contents/logs`);
+    if(!r.ok){$('hist').innerHTML='<div class="muted" style="padding:10px 0">还没有任何日志，保存第一条吧</div>';return}
+    const files=(await r.json()).filter(f=>f.name.endsWith('.md')).sort().reverse();
+    if(!files.length){$('hist').innerHTML='<div class="muted" style="padding:10px 0">还没有任何日志</div>';return}
+    $('hist').innerHTML='';
+    files.forEach(f=>{
+      const d=document.createElement('div');d.className='item';
+      const cnt=f.size>40?`${Math.max(1,Math.round(f.size/400))} 条·${(f.size/1024).toFixed(1)}KB`:'空';
+      d.innerHTML=`<span>📅 ${f.name.replace('.md','')}</span><span class="cnt">${cnt}</span>`;
+      d.onclick=()=>view(f);
+      $('hist').appendChild(d);
+    });
+  }catch(e){$('hist').innerHTML=`<div class="muted" style="padding:10px 0">加载失败：${e.message}</div>`}
+}
+
+async function view(f){
+  $('viewerCard').classList.remove('hidden');
+  $('viewerTitle').textContent='📅 '+f.name.replace('.md','');
+  $('viewer').textContent='加载中…';
+  try{
+    const r=await gh(f.url);
+    const j=await r.json();
+    $('viewer').textContent=j.content?b64dec(j.content):'（空文件）';
+    $('viewerCard').scrollIntoView({behavior:'smooth'});
+  }catch(e){$('viewer').textContent='读取失败：'+e.message}
+}
+function closeViewer(){$('viewerCard').classList.add('hidden')}
+
+$('date').value=today();
+route();
+</script>
+</body>
+</html>
