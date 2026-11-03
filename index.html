@@ -161,13 +161,19 @@ function b64dec(b){const bin=atob(b.replace(/\n/g,''));const bytes=Uint8Array.fr
 async function saveToken(){
   const t=$('tokenInput').value.trim();
   if(!t){toast('请先粘贴令牌',1);return}
-  $('setupStatus').textContent='验证中…';$('setupStatus').className='status';
+  const st=$('setupStatus');st.textContent='验证中（真实写入一次测试文件）…';st.className='status';
   try{
-    const r=await gh(`/repos/${REPO}`);
-    if(!r.ok)throw new Error('HTTP '+r.status);
+    const path=`/repos/${REPO}/contents/.setup-test.md`;
+    let r=await gh(path,{method:'PUT',body:JSON.stringify({message:'setup test',content:b64enc('ok')})});
+    if(!r.ok){
+      if(r.status===404)throw new Error('令牌里没勾选 worklog 仓库（404），去令牌设置里补上');
+      if(r.status===403)throw new Error('Contents 权限不足（403），需选 Read and write');
+      throw new Error('HTTP '+r.status);
+    }
+    const d=await gh(path,{method:'DELETE'});
     TOKEN=t;localStorage.setItem('worklog_token',t);
-    $('setupStatus').textContent='';route();toast('✅ 验证通过，已保存');
-  }catch(e){$('setupStatus').textContent='❌ '+e.message}
+    st.textContent='';route();toast('✅ 读+写验证通过，已保存');
+  }catch(e){st.textContent='❌ '+e.message}
 }
 
 async function save(){
