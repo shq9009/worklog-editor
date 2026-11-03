@@ -63,7 +63,7 @@
 <header>
   <div>
     <h1>每日工作日志</h1>
-    <div class="sub">私密仓库 · 保存即提交 GitHub</div>
+    <div class="sub">v1.2 · 私密仓库 · 保存即提交 GitHub</div>
   </div>
   <button class="linkbtn" style="color:#9cc3ee" onclick="logout()">换令牌</button>
 </header>
@@ -150,8 +150,13 @@ function route(){if(TOKEN){$('setup').classList.add('hidden');$('main').classLis
 function h(msg,ok){const s=$('saveStatus');s.textContent=msg;s.className='status'+(ok?' ok':'')}
 
 async function gh(path,opts={}){
-  const r=await fetch('https://api.github.com'+path,{...opts,headers:{'Authorization':'Bearer '+TOKEN,'Accept':'application/vnd.github+json',...(opts.headers||{})}});
-  if(r.status===401)throw new Error('令牌无效或过期（401）');
+  let r;
+  try{
+    r=await fetch('https://api.github.com'+path,{...opts,headers:{'Authorization':'Bearer '+TOKEN,'Accept':'application/vnd.github+json',...(opts.headers||{})}});
+  }catch(e){
+    throw new Error('网络不通：当前浏览器访问不了 api.github.com。请用 Safari/Chrome 正式浏览器打开本页（不要在微信/QQ内置浏览器里开），必要时开全局加速再试');
+  }
+  if(r.status===401)throw new Error('令牌无效或过期（401）——如果刚点过 Regenerate，旧令牌已作废，要用新生成的');
   if(r.status===403)throw new Error('权限不足（403），检查 Contents 是否给了 Read and write');
   return r;
 }
