@@ -80,7 +80,9 @@
       <li>Permissions → Repository permissions → <b>Contents: Read and write</b></li>
       <li>Generate token，复制以 github_pat_ 开头的令牌，粘贴到下面 ↓</li>
     </ol>
-    <input type="password" id="tokenInput" placeholder="粘贴 github_pat_... 令牌" style="margin-top:8px">
+    <label>令牌 <button class="linkbtn" onclick="const i=$('tokenInput');i.type=i.type==='password'?'text':'password'">显示/隐藏</button></label>
+    <input type="password" id="tokenInput" placeholder="粘贴 github_pat_... 令牌" oninput="previewToken()">
+    <div class="status" id="tokenPreview"></div>
     <div class="status" id="setupStatus"></div>
     <button class="btn" style="margin-top:10px" onclick="saveToken()">保存并验证</button>
   </div>
@@ -163,10 +165,18 @@ async function gh(path,opts={}){
 function b64enc(str){const bytes=new TextEncoder().encode(str);let bin='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk){bin+=String.fromCharCode(...bytes.subarray(i,i+chunk))}return btoa(bin)}
 function b64dec(b){const bin=atob(b.replace(/\n/g,''));const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes)}
 
+function previewToken(){
+  const t=$('tokenInput').value.trim(),pv=$('tokenPreview');
+  if(!t){pv.textContent='';return}
+  pv.textContent='已输入：'+t.slice(0,14)+'…'+t.slice(-4)+'（共 '+t.length+' 字符）——正确令牌应以 github_pat_ 开头、93 字符左右';
+}
 async function saveToken(){
   const t=$('tokenInput').value.trim();
   if(!t){toast('请先粘贴令牌',1);return}
-  const st=$('setupStatus');st.textContent='验证中（真实写入一次测试文件）…';st.className='status';
+  const st=$('setupStatus');
+  if(!/^(github_pat_|ghp_|gho_)/.test(t)){st.textContent='❌ 令牌格式不对：应以 github_pat_ 开头，现在开头是「'+t.slice(0,12)+'…」（长度 '+t.length+'）。回 GitHub 令牌页用复制按钮重新复制';st.className='status';return}
+  if(t.length<60){st.textContent='❌ 令牌太短（'+t.length+' 字符），复制时被截断了。回 GitHub 令牌页点复制按钮，重新完整粘贴';st.className='status';return}
+  st.textContent='验证中（'+t.slice(0,14)+'…'+t.slice(-4)+'，共 '+t.length+' 字符｜会真实写入一次测试文件）…';st.className='status';
   try{
     const path=`/repos/${REPO}/contents/.setup-test.md`;
     let r=await gh(path,{method:'PUT',body:JSON.stringify({message:'setup test',content:b64enc('ok')})});
